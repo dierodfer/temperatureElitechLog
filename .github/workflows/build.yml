@@ -1,8 +1,11 @@
 name: build
 
+# Las ramas se validan a través de su pull request. Si también se escuchara el
+# push de cualquier rama, cada commit de un PR abierto lanzaría el workflow dos
+# veces.
 on:
   push:
-    branches: ["**"]
+    branches: [main]
     tags: ["v*"]
   pull_request:
 
@@ -18,9 +21,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.24"
 
@@ -43,11 +46,11 @@ jobs:
     # Solo main publica versión. El resto de ramas se queda en tests y build.
     if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip release]')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.24"
 
@@ -122,7 +125,7 @@ jobs:
             --notes-file notas.md \
             --generate-notes
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: binarios-${{ steps.version.outputs.version }}
           path: dist/
@@ -134,9 +137,9 @@ jobs:
     # Windows: es el objetivo real del proyecto.
     if: github.ref != 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.24"
 
@@ -148,7 +151,9 @@ jobs:
           GOOS=windows GOARCH=amd64 go build -trimpath -o dist/elitechlog.exe ./cmd/elitechlog
           GOOS=linux GOARCH=amd64 go build -trimpath -o dist/elitechlog ./cmd/elitechlog
 
-      - uses: actions/upload-artifact@v4
+      # El nombre no puede llevar el de la rama: upload-artifact rechaza la
+      # barra que traen tanto "claude/mi-rama" como el "1/merge" de los PRs.
+      - uses: actions/upload-artifact@v7
         with:
-          name: binarios-${{ github.ref_name }}
+          name: binarios
           path: dist/
