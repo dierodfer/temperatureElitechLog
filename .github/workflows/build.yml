@@ -1,0 +1,159 @@
+name: build
+
+# Las ramas se validan a través de su pull request. Si también se escuchara el
+# push de cualquier rama, cada commit de un PR abierto lanzaría el workflow dos
+# veces.
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: write
+
+# Dos merges seguidos en main no deben pelearse por el mismo número de versión.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.24"
+
+      - name: Comprobar formato
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "Estos ficheros no están formateados con gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - run: go vet ./...
+
+      - run: go test ./... -race
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    # Solo main publica versión. El resto de ramas se queda en tests y build.
+    if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip release]')
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.24"
+
+      - name: Calcular la siguiente versión
+        id: version
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          # Se parte del tag más alto existente, así un major puesto a mano
+          # (v2.0.0) sigue mandando sobre la numeración automática.
+          latest=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1)
+
+          if [ -z "$latest" ]; then
+            next="v1.0.0"
+          else
+            version=${latest#v}
+            major=${version%%.*}
+            rest=${version#*.}
+            minor=${rest%%.*}
+            next="v${major}.$((minor + 1)).0"
+          fi
+
+          echo "Último tag: ${latest:-ninguno} -> nueva versión: $next"
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+          echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Compilar los binarios
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD_DATE: ${{ steps.version.outputs.date }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+
+          # Sin CGO el binario es estático, y sin packer (UPX) para no disparar
+          # los falsos positivos de los antivirus en Windows.
+          export CGO_ENABLED=0
+          ldflags="-s -w -X main.version=${VERSION} -X main.commit=${GITHUB_SHA::7} -X main.date=${BUILD_DATE}"
+
+          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "$ldflags" \
+            -o "dist/elitechlog_${VERSION}_windows_amd64.exe" ./cmd/elitechlog
+          GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "$ldflags" \
+            -o "dist/elitechlog_${VERSION}_linux_amd64" ./cmd/elitechlog
+
+          cd dist && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - name: Etiquetar y publicar la Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          cat > notas.md <<'EOF'
+          ### Descarga
+
+          Para Windows, descarga el `.exe`: ábrelo con doble clic para usar el asistente
+          paso a paso, o lánzalo desde `cmd` con los parámetros.
+
+          La primera vez, Windows mostrará el aviso de SmartScreen porque el binario no
+          está firmado; pulsa **Más información → Ejecutar de todas formas**. Puedes
+          comprobar la integridad de la descarga con `SHA256SUMS.txt`.
+          EOF
+
+          git tag "$VERSION"
+          git push origin "$VERSION"
+
+          # El API añade el changelog automático a continuación de estas notas.
+          gh release create "$VERSION" dist/* \
+            --title "$VERSION" \
+            --notes-file notas.md \
+            --generate-notes
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: binarios-${{ steps.version.outputs.version }}
+          path: dist/
+
+  build-check:
+    needs: test
+    runs-on: ubuntu-latest
+    # En ramas y PRs no se publica nada, pero sí se comprueba que compila para
+    # Windows: es el objetivo real del proyecto.
+    if: github.ref != 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.24"
+
+      - name: Compilar para Windows y Linux
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          export CGO_ENABLED=0
+          GOOS=windows GOARCH=amd64 go build -trimpath -o dist/elitechlog.exe ./cmd/elitechlog
+          GOOS=linux GOARCH=amd64 go build -trimpath -o dist/elitechlog ./cmd/elitechlog
+
+      # El nombre no puede llevar el de la rama: upload-artifact rechaza la
+      # barra que traen tanto "claude/mi-rama" como el "1/merge" de los PRs.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: binarios
+          path: dist/

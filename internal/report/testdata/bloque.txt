@@ -1,0 +1,38 @@
+==============================================================================
+  INFORME DE TEMPERATURA - ElitechLog
+==============================================================================
+  Dispositivo           : RC-5  (S/N 001)
+  Sensor                : Temperatura
+  Intervalo de registro : 6h
+  Fichero de origen     : ddf0774c-001.xls
+  Rango solicitado      : junio 2025 a junio 2025
+  Bloque                : 01-06-2025 a 15-06-2025  (15 días)
+  Límites de alarma     : L1 2,00 °C  /  H1 8,00 °C
+  Generado              : 09-08-2026 16:29:44
+------------------------------------------------------------------------------
+  Fecha        Lecturas      Media     Mínimo     Máximo   Alarma
+------------------------------------------------------------------------------
+  01-06-2025          2       3,50       1,50       5,50        1
+  02-06-2025          1       9,00       9,00       9,00        1
+  03-06-2025          -                        sin datos
+  04-06-2025          -                        sin datos
+  05-06-2025          -                        sin datos
+  06-06-2025          -                        sin datos
+  07-06-2025          -                        sin datos
+  08-06-2025          -                        sin datos
+  09-06-2025          -                        sin datos
+  10-06-2025          -                        sin datos
+  11-06-2025          -                        sin datos
+  12-06-2025          -                        sin datos
+  13-06-2025          -                        sin datos
+  14-06-2025          -                        sin datos
+  15-06-2025          -                        sin datos
+------------------------------------------------------------------------------
+  RESUMEN DEL BLOQUE
+    Días con datos  : 2 de 15
+    Lecturas        : 3
+    Media           : 5,33 °C
+    Mínimo          : 1,50 °C  (01-06-2025 00:39:33)
+    Máximo          : 9,00 °C  (02-06-2025 12:39:33)
+    Fuera de rango  : 2 lecturas  (1 por encima de 8,00 °C / 1 por debajo de 2,00 °C)
+==============================================================================

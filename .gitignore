@@ -1,0 +1,11 @@
+# Binarios compilados: se publican en las Releases, no en el repositorio.
+/dist/
+/elitechlog
+/elitechlog.exe
+
+# Salida de la herramienta
+/informes/
+
+# Ficheros exportados por ElitechLog: son datos, no código.
+*.xls
+*.xlsx
