@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-// magic son los primeros bytes de todo fichero ZIP, y por tanto de todo XLSX.
+// magic son los primeros bytes de cualquier fichero ZIP, y por tanto de cualquier XLSX.
 var magic = []byte{'P', 'K', 0x03, 0x04}
 
 // Sheet es una hoja de cálculo ya materializada: una fila por elemento, y en
@@ -223,6 +223,21 @@ func readSharedStrings(files map[string]*zip.File) ([]string, error) {
 	return out, nil
 }
 
+// sheetState es el estado acumulado al recorrer una hoja en modo streaming.
+// Separarlo en un tipo con métodos —uno por tipo de token XML— reparte la
+// lógica que antes vivía en un único bucle con switches anidados.
+type sheetState struct {
+	shared  []string
+	rows    [][]string
+	row     []string
+	col     int
+	inRow   bool
+	cellTyp string
+	cellRef string
+	value   strings.Builder
+	capture bool
+}
+
 // readSheet recorre la hoja en modo streaming: sheet2.xml del fichero de
 // ejemplo ocupa casi 2 MB, y decodificarlo entero de golpe no aporta nada.
 func readSheet(zf *zip.File, shared []string) ([][]string, error) {
@@ -233,16 +248,7 @@ func readSheet(zf *zip.File, shared []string) ([][]string, error) {
 	defer rc.Close()
 
 	dec := xml.NewDecoder(rc)
-	var (
-		rows    [][]string
-		row     []string
-		col     int
-		inRow   bool
-		cellTyp string
-		cellRef string
-		value   strings.Builder
-		capture bool
-	)
+	st := &sheetState{shared: shared}
 
 	for {
 		tok, err := dec.Token()
@@ -255,53 +261,68 @@ func readSheet(zf *zip.File, shared []string) ([][]string, error) {
 
 		switch t := tok.(type) {
 		case xml.StartElement:
-			switch t.Name.Local {
-			case "row":
-				inRow, row, col = true, nil, 0
-			case "c":
-				if !inRow {
-					continue
-				}
-				cellTyp, cellRef = "", ""
-				for _, a := range t.Attr {
-					switch a.Name.Local {
-					case "t":
-						cellTyp = a.Value
-					case "r":
-						cellRef = a.Value
-					}
-				}
-				// La referencia manda: así una celda vacía no desplaza el resto.
-				if idx, ok := columnIndex(cellRef); ok {
-					col = idx
-				}
-				value.Reset()
-			case "v", "t":
-				capture = true
-			}
-
+			st.start(t)
 		case xml.CharData:
-			if capture {
-				value.Write(t)
-			}
-
+			st.char(t)
 		case xml.EndElement:
-			switch t.Name.Local {
-			case "v", "t":
-				capture = false
-			case "c":
-				if !inRow {
-					continue
-				}
-				row = setAt(row, col, decodeValue(value.String(), cellTyp, shared))
-				col++
-			case "row":
-				rows = append(rows, row)
-				inRow = false
-			}
+			st.end(t)
 		}
 	}
-	return rows, nil
+	return st.rows, nil
+}
+
+func (st *sheetState) start(t xml.StartElement) {
+	switch t.Name.Local {
+	case "row":
+		st.inRow, st.row, st.col = true, nil, 0
+	case "c":
+		if st.inRow {
+			st.startCell(t)
+		}
+	case "v", "t":
+		st.capture = true
+	}
+}
+
+// startCell procesa la apertura de una celda: fija su tipo, su columna real
+// (a partir de la referencia, para no desplazarse con huecos) y prepara el
+// acumulador de su valor.
+func (st *sheetState) startCell(t xml.StartElement) {
+	st.cellTyp, st.cellRef = "", ""
+	for _, a := range t.Attr {
+		switch a.Name.Local {
+		case "t":
+			st.cellTyp = a.Value
+		case "r":
+			st.cellRef = a.Value
+		}
+	}
+	// La referencia manda: así una celda vacía no desplaza el resto.
+	if idx, ok := columnIndex(st.cellRef); ok {
+		st.col = idx
+	}
+	st.value.Reset()
+}
+
+func (st *sheetState) char(t xml.CharData) {
+	if st.capture {
+		st.value.Write(t)
+	}
+}
+
+func (st *sheetState) end(t xml.EndElement) {
+	switch t.Name.Local {
+	case "v", "t":
+		st.capture = false
+	case "c":
+		if st.inRow {
+			st.row = setAt(st.row, st.col, decodeValue(st.value.String(), st.cellTyp, st.shared))
+			st.col++
+		}
+	case "row":
+		st.rows = append(st.rows, st.row)
+		st.inRow = false
+	}
 }
 
 // decodeValue traduce el contenido bruto de una celda según su tipo declarado.
