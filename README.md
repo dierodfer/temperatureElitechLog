@@ -1,5 +1,12 @@
 # temperatureElitechLog
 
+[![build](https://img.shields.io/github/actions/workflow/status/dierodfer/temperatureElitechLog/build.yml?branch=main&label=build)](https://github.com/dierodfer/temperatureElitechLog/actions/workflows/build.yml)
+[![versión](https://img.shields.io/github/v/release/dierodfer/temperatureElitechLog?label=versi%C3%B3n&color=blue)](https://github.com/dierodfer/temperatureElitechLog/releases/latest)
+[![descargas](https://img.shields.io/github/downloads/dierodfer/temperatureElitechLog/total?label=descargas)](https://github.com/dierodfer/temperatureElitechLog/releases)
+[![Go](https://img.shields.io/github/go-mod/go-version/dierodfer/temperatureElitechLog?label=go)](go.mod)
+[![plataformas](https://img.shields.io/badge/plataformas-Windows%20%7C%20Linux-lightgrey)](https://github.com/dierodfer/temperatureElitechLog/releases/latest)
+[![dependencias](https://img.shields.io/badge/dependencias-ninguna-brightgreen)](go.mod)
+
 Repositorio dedicado a ofrecer una solución cómoda para archivos generados por ElitechLog 8.0 y su
 tratamiento profesional.
 
