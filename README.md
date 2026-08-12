@@ -4,7 +4,7 @@
 [![versión](https://img.shields.io/github/v/release/dierodfer/temperatureElitechLog?label=versi%C3%B3n&color=blue)](https://github.com/dierodfer/temperatureElitechLog/releases/latest)
 [![descargas](https://img.shields.io/github/downloads/dierodfer/temperatureElitechLog/total?label=descargas)](https://github.com/dierodfer/temperatureElitechLog/releases)
 [![Go](https://img.shields.io/github/go-mod/go-version/dierodfer/temperatureElitechLog?label=go)](go.mod)
-[![plataformas](https://img.shields.io/badge/plataformas-Windows%20%7C%20Linux-lightgrey)](https://github.com/dierodfer/temperatureElitechLog/releases/latest)
+[![plataformas](https://img.shields.io/badge/plataformas-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)](https://github.com/dierodfer/temperatureElitechLog/releases/latest)
 [![dependencias](https://img.shields.io/badge/dependencias-ninguna-brightgreen)](go.mod)
 
 Repositorio dedicado a ofrecer una solución cómoda para archivos generados por ElitechLog 8.0 y su
@@ -27,14 +27,31 @@ Descarga el ejecutable de la última versión desde la página de
 |---|---|
 | `elitechlog_vX.Y.Z_windows_amd64.exe` | Windows 64 bits |
 | `elitechlog_vX.Y.Z_linux_amd64` | Linux 64 bits |
+| `elitechlog_vX.Y.Z_darwin_arm64` | macOS con Apple Silicon (M1 o posterior) |
+| `elitechlog_vX.Y.Z_darwin_amd64` | macOS con Intel |
 
-> **Aviso de SmartScreen.** El binario no está firmado con un certificado de código, así que la
-> primera vez Windows mostrará *"Windows protegió su PC"*. Pulsa **Más información → Ejecutar de
-> todas formas**. Puedes verificar que la descarga es la publicada comparándola con
-> `SHA256SUMS.txt`:
+En Linux y macOS, dale permiso de ejecución antes de lanzarlo:
+
+```bash
+chmod +x elitechlog_vX.Y.Z_darwin_arm64
+./elitechlog_vX.Y.Z_darwin_arm64
+```
+
+> **Aviso de SmartScreen / Gatekeeper.** El binario no está firmado con un certificado de código,
+> así que la primera vez el sistema avisará. En **Windows**, *"Windows protegió su PC"* → **Más
+> información → Ejecutar de todas formas**. En **macOS**, *"no se puede abrir porque su desarrollador
+> no se puede verificar"* → Ajustes → Privacidad y seguridad → **Abrir de todas formas** (o clic
+> derecho sobre el fichero → Abrir). Puedes verificar que la descarga es la publicada comparándola
+> con `SHA256SUMS.txt`:
 >
 > ```powershell
+> # Windows (PowerShell)
 > Get-FileHash .\elitechlog_v1.0.0_windows_amd64.exe -Algorithm SHA256
+> ```
+>
+> ```bash
+> # Linux / macOS
+> shasum -a 256 elitechlog_v1.0.0_darwin_arm64
 > ```
 
 ## Uso
@@ -148,9 +165,10 @@ reexporte en formato Excel.
 ## Desarrollo
 
 ```bash
-go test ./... -race     # tests
-make windows            # compila dist/elitechlog.exe desde cualquier sistema
-make build              # Windows y Linux
+go test ./... -race   # tests
+make windows           # compila dist/elitechlog.exe desde cualquier sistema
+make darwin            # compila dist/elitechlog_darwin_{amd64,arm64}
+make build             # Windows, Linux y macOS
 ```
 
 El proyecto usa **solo la librería estándar de Go**: el lector de XLSX está implementado con

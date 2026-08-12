@@ -24,52 +24,65 @@ type Device struct {
 // celda buscando etiquetas conocidas porque ElitechLog reordena los pares
 // etiqueta/valor según el modelo de registrador.
 func readDevice(book *xlsx.File) Device {
-	sheet := book.Sheet("Resumen")
+	sheet := summarySheet(book)
 	if sheet == nil {
-		if sheet = book.Sheet("Summary"); sheet == nil {
-			if len(book.Sheets) == 0 {
-				return Device{}
-			}
-			sheet = book.Sheets[0]
-		}
+		return Device{}
 	}
 
 	var d Device
 	for r, row := range sheet.Rows {
 		for c, cell := range row {
-			text := strings.TrimSpace(cell)
-			if text == "" {
-				continue
-			}
-
-			// Los límites de alarma vienen embebidos en el propio texto,
-			// con la forma "H1: Encima:    8,0°C".
-			if v, ok := limitValue(text, "h1"); ok && d.HighLimit == nil {
-				d.HighLimit = &v
-				continue
-			}
-			if v, ok := limitValue(text, "l1"); ok && d.LowLimit == nil {
-				d.LowLimit = &v
-				continue
-			}
-
-			switch normalize(text) {
-			case "modelo", "model":
-				assign(&d.Model, valueAfter(sheet, r, c))
-			case "s/n", "sn", "numero de serie", "serial number":
-				assign(&d.Serial, valueAfter(sheet, r, c))
-			case "tipo de sensor", "sensor type":
-				assign(&d.Sensor, valueAfter(sheet, r, c))
-			case "version de firmware", "firmware version":
-				assign(&d.Firmware, valueAfter(sheet, r, c))
-			case "intervalo", "interval":
-				assign(&d.Interval, valueAfter(sheet, r, c))
-			case "descripcion", "description":
-				assign(&d.Description, valueAfter(sheet, r, c))
+			if text := strings.TrimSpace(cell); text != "" {
+				applyCell(&d, sheet, r, c, text)
 			}
 		}
 	}
 	return d
+}
+
+// summarySheet localiza la hoja de metadatos: "Resumen", su nombre en inglés
+// "Summary" o, en su defecto, la primera hoja del libro.
+func summarySheet(book *xlsx.File) *xlsx.Sheet {
+	if sheet := book.Sheet("Resumen"); sheet != nil {
+		return sheet
+	}
+	if sheet := book.Sheet("Summary"); sheet != nil {
+		return sheet
+	}
+	if len(book.Sheets) > 0 {
+		return book.Sheets[0]
+	}
+	return nil
+}
+
+// applyCell interpreta una celda no vacía de la hoja de resumen: puede ser un
+// límite de alarma embebido en el texto o la etiqueta de un campo conocido.
+func applyCell(d *Device, sheet *xlsx.Sheet, r, c int, text string) {
+	// Los límites de alarma vienen embebidos en el propio texto, con la
+	// forma "H1: Encima:    8,0°C".
+	if v, ok := limitValue(text, "h1"); ok && d.HighLimit == nil {
+		d.HighLimit = &v
+		return
+	}
+	if v, ok := limitValue(text, "l1"); ok && d.LowLimit == nil {
+		d.LowLimit = &v
+		return
+	}
+
+	switch normalize(text) {
+	case "modelo", "model":
+		assign(&d.Model, valueAfter(sheet, r, c))
+	case "s/n", "sn", "numero de serie", "serial number":
+		assign(&d.Serial, valueAfter(sheet, r, c))
+	case "tipo de sensor", "sensor type":
+		assign(&d.Sensor, valueAfter(sheet, r, c))
+	case "version de firmware", "firmware version":
+		assign(&d.Firmware, valueAfter(sheet, r, c))
+	case "intervalo", "interval":
+		assign(&d.Interval, valueAfter(sheet, r, c))
+	case "descripcion", "description":
+		assign(&d.Description, valueAfter(sheet, r, c))
+	}
 }
 
 // assign solo escribe la primera aparición: en estos libros la etiqueta puede
