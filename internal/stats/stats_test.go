@@ -45,6 +45,23 @@ func TestByDayAggregates(t *testing.T) {
 	}
 }
 
+func TestByDayKeepsIndividualReadings(t *testing.T) {
+	days := ByDay([]elitech.Reading{at(1, 12, 7), at(1, 0, 3), at(2, 6, 4), at(1, 6, 5)}, nil, nil)
+
+	got := days[0].Readings
+	if len(got) != 3 {
+		t.Fatalf("lecturas del día 1 = %d, se esperaban 3", len(got))
+	}
+	for i, wantHour := range []int{0, 6, 12} {
+		if got[i].Time.Hour() != wantHour {
+			t.Errorf("lectura %d a las %d h, se esperaba a las %d h", i, got[i].Time.Hour(), wantHour)
+		}
+	}
+	if len(days[1].Readings) != 1 {
+		t.Errorf("lecturas del día 2 = %d, se esperaba 1", len(days[1].Readings))
+	}
+}
+
 func TestByDaySortsChronologically(t *testing.T) {
 	days := ByDay([]elitech.Reading{at(9, 0, 1), at(2, 0, 1), at(5, 0, 1)}, nil, nil)
 	for i := 1; i < len(days); i++ {

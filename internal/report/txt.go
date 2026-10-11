@@ -47,30 +47,13 @@ func Render(b stats.Block, dev elitech.Device, source string, opt Options) strin
 	writeField(&sb, "Límites de alarma", limitsLabel(dev, opt.Decimals))
 	writeField(&sb, "Generado", opt.Generated.Format(stampFmt))
 
-	showAlarm := dev.HighLimit != nil || dev.LowLimit != nil
-
 	sb.WriteString(thin + "\n")
-	sb.WriteString("  " + pad("Fecha", 12) + padLeft("Lecturas", 9) +
-		padLeft("Media", 11) + padLeft("Mínimo", 11) + padLeft("Máximo", 11))
-	if showAlarm {
-		sb.WriteString(padLeft("Alarma", 9))
-	}
-	sb.WriteString("\n" + thin + "\n")
+	sb.WriteString("  " + pad("Fecha y hora", 21) + padLeft("Temp. °C", 12) +
+		strings.Repeat(" ", 10) + "Resumen del día\n")
+	sb.WriteString(thin + "\n")
 
 	for _, d := range b.Days {
-		sb.WriteString("  " + pad(d.Date.Format(dateFmt), 12))
-		if d.Count == 0 {
-			sb.WriteString(padLeft("-", 9) + padLeft("sin datos", 33) + "\n")
-			continue
-		}
-		sb.WriteString(padLeft(fmt.Sprint(d.Count), 9) +
-			padLeft(num(d.Mean, opt.Decimals), 11) +
-			padLeft(num(d.Min, opt.Decimals), 11) +
-			padLeft(num(d.Max, opt.Decimals), 11))
-		if showAlarm {
-			sb.WriteString(padLeft(alarmMark(d), 9))
-		}
-		sb.WriteString("\n")
+		writeDay(&sb, d, opt.Decimals)
 	}
 
 	s := b.Summarize(dev.HighLimit, dev.LowLimit)
@@ -143,11 +126,34 @@ func excursionLabel(s stats.Summary, dev elitech.Device, decimals int) string {
 	return fmt.Sprintf("%s  (%s)", plural(total, "lectura", "lecturas"), strings.Join(detail, " / "))
 }
 
-func alarmMark(d stats.Day) string {
-	if n := d.Above + d.Below; n > 0 {
-		return fmt.Sprint(n)
+// writeDay escribe cada lectura del día en su propia línea y, a la derecha,
+// el máximo, el mínimo y la media del día, empezando en la segunda lectura.
+// Si el día tiene pocas lecturas se añaden líneas para que el resumen quepa.
+func writeDay(sb *strings.Builder, d stats.Day, decimals int) {
+	if d.Count == 0 {
+		sb.WriteString("  " + pad(d.Date.Format(dateFmt), 21) + padLeft("sin datos", 12) + "\n")
+		return
 	}
-	return "-"
+
+	summary := []string{
+		padLeft(num(d.Max, decimals), 10) + " Máximo",
+		padLeft(num(d.Min, decimals), 10) + " Mínimo",
+		padLeft(num(d.Mean, decimals), 10) + " Media",
+	}
+	lines := max(len(d.Readings), len(summary)+1)
+
+	for i := 0; i < lines; i++ {
+		left := strings.Repeat(" ", 33)
+		if i < len(d.Readings) {
+			r := d.Readings[i]
+			left = pad(r.Time.Format(stampFmt), 21) + padLeft(num(r.Temp, decimals), 12)
+		}
+		line := "  " + left
+		if j := i - 1; j >= 0 && j < len(summary) {
+			line += "     " + summary[j]
+		}
+		sb.WriteString(strings.TrimRight(line, " ") + "\n")
+	}
 }
 
 // writeField omite las líneas cuyo valor no venía en el fichero de origen.
