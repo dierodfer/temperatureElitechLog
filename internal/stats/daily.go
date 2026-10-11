@@ -19,6 +19,8 @@ type Day struct {
 	MaxAt time.Time // instante exacto del máximo
 	Above int       // lecturas por encima del límite de alarma superior
 	Below int       // lecturas por debajo del límite de alarma inferior
+
+	Readings []elitech.Reading // lecturas individuales del día, en orden cronológico
 }
 
 // ByDay agrupa las lecturas por fecha natural y devuelve los días ordenados
@@ -34,6 +36,7 @@ func ByDay(readings []elitech.Reading, high, low *float64) []Day {
 		min, max     float64
 		minAt, maxAt time.Time
 		above, below int
+		readings     []elitech.Reading
 	}
 
 	groups := map[time.Time]*acc{}
@@ -46,6 +49,7 @@ func ByDay(readings []elitech.Reading, high, low *float64) []Day {
 		}
 		a.sum += r.Temp
 		a.count++
+		a.readings = append(a.readings, r)
 		if r.Temp < a.min {
 			a.min, a.minAt = r.Temp, r.Time
 		}
@@ -62,6 +66,7 @@ func ByDay(readings []elitech.Reading, high, low *float64) []Day {
 
 	days := make([]Day, 0, len(groups))
 	for date, a := range groups {
+		sort.SliceStable(a.readings, func(i, j int) bool { return a.readings[i].Time.Before(a.readings[j].Time) })
 		days = append(days, Day{
 			Date:  date,
 			Count: a.count,
@@ -72,6 +77,8 @@ func ByDay(readings []elitech.Reading, high, low *float64) []Day {
 			MaxAt: a.maxAt,
 			Above: a.above,
 			Below: a.below,
+
+			Readings: a.readings,
 		})
 	}
 	sort.Slice(days, func(i, j int) bool { return days[i].Date.Before(days[j].Date) })

@@ -124,12 +124,15 @@ Cada bloque produce un fichero `informe_<S/N>_<desde>_<hasta>.txt`:
   Límites de alarma     : L1 2,00 °C  /  H1 8,00 °C
   Generado              : 09-08-2026 22:36:35
 ------------------------------------------------------------------------------
-  Fecha        Lecturas      Media     Mínimo     Máximo   Alarma
+  Fecha y hora             Temp. °C          Resumen del día
 ------------------------------------------------------------------------------
-  16-06-2026          4       2,30       0,90       3,40        1
-  17-06-2026          4       2,25       0,10       4,20        2
+  16-06-2026 00:39:33          3,40
+  16-06-2026 06:39:33          0,90           3,40 Máximo
+  16-06-2026 12:39:33          2,10           0,90 Mínimo
+  16-06-2026 18:39:33          2,80           2,30 Media
+  17-06-2026 00:39:33          0,10
   ...
-  29-06-2026          -                        sin datos
+  29-06-2026              sin datos
 ------------------------------------------------------------------------------
   RESUMEN DEL BLOQUE
     Días con datos  : 13 de 15
@@ -141,7 +144,8 @@ Cada bloque produce un fichero `informe_<S/N>_<desde>_<hasta>.txt`:
 ==============================================================================
 ```
 
-La columna **Alarma** y la línea **Fuera de rango** solo aparecen si el fichero trae configurados los
+Cada lectura del registrador aparece en su propia línea, con el máximo, el mínimo y la media de su
+día a la derecha. La línea **Fuera de rango** solo aparece si el fichero trae configurados los
 límites `H1`/`L1` del registrador. Los TXT se escriben con saltos de línea CRLF y, por defecto, con
 BOM UTF-8, para que el Bloc de notas y Excel muestren bien los acentos y el símbolo de grado.
 
