@@ -68,10 +68,21 @@ func Wizard(version string) error {
 // askFile pide el fichero hasta que uno se deja leer, en lugar de abortar al
 // primer intento fallido: teclear rutas en Windows es propenso a erratas.
 func askFile(in *bufio.Reader) (string, *elitech.Log, error) {
-	suggestion := findLocalFile()
+	recent := findRecords(searchBases()...)
+	if len(recent) > maxListed {
+		recent = recent[:maxListed]
+	}
+	suggestion := ""
+	if len(recent) > 0 {
+		suggestion = recent[0].Path
+		printRecords(recent)
+	} else {
+		suggestion = findLocalFile()
+	}
 
 	for attempt := 0; ; attempt++ {
-		path := unquote(askText(in, "Fichero exportado por ElitechLog", suggestion))
+		answer := unquote(askText(in, "Fichero exportado por ElitechLog (ruta o número)", suggestion))
+		path := pickRecord(answer, recent)
 		if path == "" {
 			fmt.Println("  Debes indicar un fichero.")
 			continue
@@ -87,7 +98,22 @@ func askFile(in *bufio.Reader) (string, *elitech.Log, error) {
 			return "", nil, err
 		}
 		suggestion = ""
+		recent = nil
 	}
+}
+
+// printRecords enseña los ficheros de la carpeta registros con su fecha de
+// modificación, para que se vea de un vistazo cuál es el último exportado.
+func printRecords(files []recordFile) {
+	fmt.Printf("Ficheros en la carpeta %q (el más reciente primero):\n", recordsDir)
+	for i, f := range files {
+		note := ""
+		if i == 0 {
+			note = "  <- más reciente"
+		}
+		fmt.Printf("  %d) %s   modificado %s%s\n", i+1, f.Name, f.ModTime.Format(modFmt), note)
+	}
+	fmt.Println()
 }
 
 // findLocalFile propone el único .xls/.xlsx del directorio actual, que es el

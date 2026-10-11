@@ -73,6 +73,18 @@ Días por informe [15]:
 Carpeta de salida [informes]:
 ```
 
+Si junto al ejecutable hay una carpeta `registros` con ficheros `.xls`/`.xlsx`, el asistente los
+lista del más reciente al más antiguo, con su fecha de modificación, y propone el último por defecto.
+Se puede elegir otro escribiendo su número o una ruta:
+
+```
+Ficheros en la carpeta "registros" (el más reciente primero):
+  1) ddf0774c-001.xls   modificado 20-01-2026 18:30  <- más reciente
+  2) ddf0774c-000.xls   modificado 10-01-2026 08:00
+
+Fichero exportado por ElitechLog (ruta o número) [registros/ddf0774c-001.xls]:
+```
+
 ### Desde `cmd` o PowerShell
 
 ```
