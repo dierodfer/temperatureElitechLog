@@ -66,7 +66,7 @@ func footer(b stats.Block, dev elitech.Device, source string, opt Options) strin
 	}
 	parts = append(parts,
 		fmt.Sprintf("%s a %s", b.From.Format(dateFmt), b.To.Format(dateFmt)),
-		"Generado "+opt.Generated.Format(generatedFmt))
+		opt.Generated.Format(generatedFmt))
 	return strings.Join(parts, " · ")
 }
 
