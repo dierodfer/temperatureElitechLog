@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	"time"
 
 	"github.com/dierodfer/temperatureElitechLog/internal/elitech"
 	"github.com/dierodfer/temperatureElitechLog/internal/report"
@@ -62,11 +61,10 @@ func Generate(req Request) (*Result, error) {
 	}
 
 	opt := report.Options{
-		Decimals:  req.Decimals,
-		From:      from,
-		To:        to,
-		Interval:  req.Interval,
-		Generated: time.Now(),
+		Decimals: req.Decimals,
+		From:     from,
+		To:       to,
+		Interval: req.Interval,
 	}
 	if err := writeBlocks(res, blocks, log, req, opt, enc); err != nil {
 		return nil, err

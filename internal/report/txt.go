@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"time"
 	"unicode/utf8"
 
 	"github.com/dierodfer/temperatureElitechLog/internal/elitech"
@@ -20,34 +19,19 @@ const (
 
 // Options controla el formato de la salida.
 type Options struct {
-	Decimals  int         // decimales de las temperaturas
-	From      stats.Month // mes inicial solicitado, solo informativo
-	To        stats.Month // mes final solicitado, solo informativo
-	Interval  int
-	Generated time.Time
+	Decimals int         // decimales de las temperaturas
+	From     stats.Month // mes inicial solicitado, solo informativo
+	To       stats.Month // mes final solicitado, solo informativo
+	Interval int
 }
 
-// Render compone el texto del informe de un bloque.
+// Render compone el texto del informe de un bloque: la tabla de lecturas y, al
+// final, el resumen mensual y los datos del origen en un par de líneas.
 func Render(b stats.Block, dev elitech.Device, source string, opt Options) string {
 	var sb strings.Builder
 	rule := strings.Repeat("=", width)
 	thin := strings.Repeat("-", width)
 
-	sb.WriteString(rule + "\n")
-	sb.WriteString("  INFORME DE TEMPERATURA - ElitechLog\n")
-	sb.WriteString(rule + "\n")
-
-	writeField(&sb, "Dispositivo", deviceLabel(dev))
-	writeField(&sb, "Sensor", dev.Sensor)
-	writeField(&sb, "Intervalo de registro", dev.Interval)
-	writeField(&sb, "Fichero de origen", filepath.Base(source))
-	writeField(&sb, "Rango solicitado", fmt.Sprintf("%s a %s", opt.From.Human(), opt.To.Human()))
-	writeField(&sb, "Bloque", fmt.Sprintf("%s a %s  (%s)",
-		b.From.Format(dateFmt), b.To.Format(dateFmt), plural(b.Span(), "día", "días")))
-	writeField(&sb, "Límites de alarma", limitsLabel(dev, opt.Decimals))
-	writeField(&sb, "Generado", opt.Generated.Format(stampFmt))
-
-	sb.WriteString(thin + "\n")
 	sb.WriteString("  " + pad("Fecha y hora", 21) + padLeft("Temp. °C", 12) +
 		strings.Repeat(" ", 10) + "Resumen del día\n")
 	sb.WriteString(thin + "\n")
@@ -58,24 +42,28 @@ func Render(b stats.Block, dev elitech.Device, source string, opt Options) strin
 
 	s := b.Summarize(dev.HighLimit, dev.LowLimit)
 	sb.WriteString(thin + "\n")
-	sb.WriteString("  RESUMEN DEL BLOQUE\n")
-
 	if s.Count == 0 {
-		sb.WriteString("    Sin lecturas en este intervalo.\n")
-		sb.WriteString(rule + "\n")
-		return sb.String()
+		sb.WriteString("  Resumen mensual: sin lecturas en este intervalo.\n")
+	} else {
+		sb.WriteString(fmt.Sprintf("  Resumen mensual: Media %s °C · Mínimo %s °C · Máximo %s °C\n",
+			num(s.Mean, opt.Decimals), num(s.Min, opt.Decimals), num(s.Max, opt.Decimals)))
 	}
-
-	writeSummary(&sb, "Días con datos", fmt.Sprintf("%d de %d", b.DaysWithData(), b.Span()))
-	writeSummary(&sb, "Lecturas", fmt.Sprint(s.Count))
-	writeSummary(&sb, "Media", num(s.Mean, opt.Decimals)+" °C")
-	writeSummary(&sb, "Mínimo", fmt.Sprintf("%s °C  (%s)", num(s.Min, opt.Decimals), s.MinAt.Format(stampFmt)))
-	writeSummary(&sb, "Máximo", fmt.Sprintf("%s °C  (%s)", num(s.Max, opt.Decimals), s.MaxAt.Format(stampFmt)))
-	if s.HasExcursion {
-		writeSummary(&sb, "Fuera de rango", excursionLabel(s, dev, opt.Decimals))
-	}
+	sb.WriteString("  " + footer(b, dev, source, opt) + "\n")
 	sb.WriteString(rule + "\n")
 	return sb.String()
+}
+
+// footer junta en una línea los datos del origen que no vienen en la tabla.
+func footer(b stats.Block, dev elitech.Device, source string, opt Options) string {
+	parts := []string{}
+	for _, p := range []string{deviceLabel(dev), filepath.Base(source)} {
+		if strings.TrimSpace(p) != "" {
+			parts = append(parts, p)
+		}
+	}
+	parts = append(parts,
+		fmt.Sprintf("%s a %s", b.From.Format(dateFmt), b.To.Format(dateFmt)))
+	return strings.Join(parts, " · ")
 }
 
 // Filename construye el nombre del fichero de un bloque.
@@ -91,39 +79,13 @@ func Filename(b stats.Block, dev elitech.Device) string {
 func deviceLabel(dev elitech.Device) string {
 	switch {
 	case dev.Model != "" && dev.Serial != "":
-		return fmt.Sprintf("%s  (S/N %s)", dev.Model, dev.Serial)
+		return fmt.Sprintf("%s (S/N %s)", dev.Model, dev.Serial)
 	case dev.Model != "":
 		return dev.Model
 	case dev.Serial != "":
 		return "S/N " + dev.Serial
 	}
 	return ""
-}
-
-func limitsLabel(dev elitech.Device, decimals int) string {
-	var parts []string
-	if dev.LowLimit != nil {
-		parts = append(parts, fmt.Sprintf("L1 %s °C", num(*dev.LowLimit, decimals)))
-	}
-	if dev.HighLimit != nil {
-		parts = append(parts, fmt.Sprintf("H1 %s °C", num(*dev.HighLimit, decimals)))
-	}
-	return strings.Join(parts, "  /  ")
-}
-
-func excursionLabel(s stats.Summary, dev elitech.Device, decimals int) string {
-	total := s.AboveHigh + s.BelowLow
-	if total == 0 {
-		return "ninguna"
-	}
-	var detail []string
-	if s.AboveHigh > 0 && dev.HighLimit != nil {
-		detail = append(detail, fmt.Sprintf("%d por encima de %s °C", s.AboveHigh, num(*dev.HighLimit, decimals)))
-	}
-	if s.BelowLow > 0 && dev.LowLimit != nil {
-		detail = append(detail, fmt.Sprintf("%d por debajo de %s °C", s.BelowLow, num(*dev.LowLimit, decimals)))
-	}
-	return fmt.Sprintf("%s  (%s)", plural(total, "lectura", "lecturas"), strings.Join(detail, " / "))
 }
 
 // writeDay escribe cada lectura del día en su propia línea y, a la derecha,
@@ -157,16 +119,6 @@ func writeDay(sb *strings.Builder, d stats.Day, decimals int) {
 }
 
 // writeField omite las líneas cuyo valor no venía en el fichero de origen.
-func writeField(sb *strings.Builder, label, value string) {
-	if strings.TrimSpace(value) == "" {
-		return
-	}
-	sb.WriteString("  " + pad(label, 22) + ": " + value + "\n")
-}
-
-func writeSummary(sb *strings.Builder, label, value string) {
-	sb.WriteString("    " + pad(label, 16) + ": " + value + "\n")
-}
 
 // num formatea con coma decimal, que es la convención del fichero de origen.
 func num(v float64, decimals int) string {
@@ -176,13 +128,6 @@ func num(v float64, decimals int) string {
 		s = strings.TrimPrefix(s, "-")
 	}
 	return strings.ReplaceAll(s, ".", ",")
-}
-
-func plural(n int, one, many string) string {
-	if n == 1 {
-		return fmt.Sprintf("%d %s", n, one)
-	}
-	return fmt.Sprintf("%d %s", n, many)
 }
 
 // pad y padLeft cuentan runas, no bytes: los acentos ocuparían dos posiciones

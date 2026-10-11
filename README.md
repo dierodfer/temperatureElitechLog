@@ -73,6 +73,18 @@ Días por informe [15]:
 Carpeta de salida [informes]:
 ```
 
+Si en la carpeta desde la que se ejecuta hay una carpeta `registros` con ficheros `.xls`/`.xlsx`, el asistente los
+lista del más reciente al más antiguo, con su fecha de modificación, y propone el último por defecto.
+Se puede elegir otro escribiendo su número o una ruta:
+
+```
+Ficheros en la carpeta "registros" (el más reciente primero):
+  1) ddf0774c-001.xls   modificado 20-01-2026 18:30  <- más reciente
+  2) ddf0774c-000.xls   modificado 10-01-2026 08:00
+
+Fichero exportado por ElitechLog (ruta o número) [registros/ddf0774c-001.xls]:
+```
+
 ### Desde `cmd` o PowerShell
 
 ```
@@ -112,18 +124,6 @@ Los bloques sin ninguna lectura no generan fichero, salvo que se pida `--incluir
 Cada bloque produce un fichero `informe_<S/N>_<desde>_<hasta>.txt`:
 
 ```
-==============================================================================
-  INFORME DE TEMPERATURA - ElitechLog
-==============================================================================
-  Dispositivo           : RC-5  (S/N 001)
-  Sensor                : Temperatura
-  Intervalo de registro : 6h
-  Fichero de origen     : ddf0774c-001.xls
-  Rango solicitado      : junio 2025 a julio 2026
-  Bloque                : 16-06-2026 a 30-06-2026  (15 días)
-  Límites de alarma     : L1 2,00 °C  /  H1 8,00 °C
-  Generado              : 09-08-2026 22:36:35
-------------------------------------------------------------------------------
   Fecha y hora             Temp. °C          Resumen del día
 ------------------------------------------------------------------------------
   16-06-2026 00:39:33          3,40
@@ -134,19 +134,14 @@ Cada bloque produce un fichero `informe_<S/N>_<desde>_<hasta>.txt`:
   ...
   29-06-2026              sin datos
 ------------------------------------------------------------------------------
-  RESUMEN DEL BLOQUE
-    Días con datos  : 13 de 15
-    Lecturas        : 51
-    Media           : 3,58 °C
-    Mínimo          : 0,10 °C  (17-06-2026 06:39:33)
-    Máximo          : 8,10 °C  (23-06-2026 12:39:33)
-    Fuera de rango  : 11 lecturas  (1 por encima de 8,00 °C / 10 por debajo de 2,00 °C)
+  Resumen mensual: Media 3,58 °C · Mínimo 0,10 °C · Máximo 8,10 °C
+  RC-5 (S/N 001) · ddf0774c-001.xls · 16-06-2026 a 30-06-2026
 ==============================================================================
 ```
 
 Cada lectura del registrador aparece en su propia línea, con el máximo, el mínimo y la media de su
-día a la derecha. La línea **Fuera de rango** solo aparece si el fichero trae configurados los
-límites `H1`/`L1` del registrador. Los TXT se escriben con saltos de línea CRLF y, por defecto, con
+día a la derecha. Al final se resume el periodo y se indican el dispositivo, el fichero de origen y
+el periodo del informe. Los TXT se escriben con saltos de línea CRLF y, por defecto, con
 BOM UTF-8, para que el Bloc de notas y Excel muestren bien los acentos y el símbolo de grado.
 
 ## Sobre el fichero de entrada

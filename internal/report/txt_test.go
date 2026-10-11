@@ -34,11 +34,10 @@ func sample(t *testing.T) (stats.Block, elitech.Device, Options) {
 	}
 
 	opt := Options{
-		Decimals:  2,
-		From:      june,
-		To:        june,
-		Interval:  15,
-		Generated: time.Date(2026, 8, 9, 16, 29, 44, 0, time.UTC),
+		Decimals: 2,
+		From:     june,
+		To:       june,
+		Interval: 15,
 	}
 	return blocks[0], dev, opt
 }
@@ -89,7 +88,7 @@ func TestRenderEmptyBlock(t *testing.T) {
 	}
 
 	out := Render(blocks[0], elitech.Device{}, "datos.xls", Options{Decimals: 2, From: july, To: july})
-	if !strings.Contains(out, "Sin lecturas en este intervalo") {
+	if !strings.Contains(out, "sin lecturas en este intervalo") {
 		t.Errorf("un bloque vacío debería decirlo explícitamente:\n%s", out)
 	}
 }
