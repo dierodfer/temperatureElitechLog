@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
-// recordsDir es la carpeta, junto al ejecutable, donde se dejan los ficheros
-// exportados por ElitechLog.
+// recordsDir es la carpeta, dentro de la carpeta desde la que se ejecuta la
+// aplicación, donde se dejan los ficheros exportados por ElitechLog.
 const recordsDir = "registros"
 
 // maxListed limita cuántos ficheros recientes se enseñan en el asistente.
@@ -75,17 +75,6 @@ func isExport(name string) bool {
 		return true
 	}
 	return false
-}
-
-// searchBases son las carpetas donde puede estar «registros»: la actual, que es
-// donde se lanza el ejecutable desde una consola, y la del propio ejecutable,
-// que es la que cuenta al abrirlo con doble clic.
-func searchBases() []string {
-	bases := []string{"."}
-	if exe, err := os.Executable(); err == nil {
-		bases = append(bases, filepath.Dir(exe))
-	}
-	return bases
 }
 
 // pickRecord interpreta la respuesta del usuario: un número de la lista

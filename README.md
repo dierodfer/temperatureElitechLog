@@ -73,7 +73,7 @@ Días por informe [15]:
 Carpeta de salida [informes]:
 ```
 
-Si junto al ejecutable hay una carpeta `registros` con ficheros `.xls`/`.xlsx`, el asistente los
+Si en la carpeta desde la que se ejecuta hay una carpeta `registros` con ficheros `.xls`/`.xlsx`, el asistente los
 lista del más reciente al más antiguo, con su fecha de modificación, y propone el último por defecto.
 Se puede elegir otro escribiendo su número o una ruta:
 

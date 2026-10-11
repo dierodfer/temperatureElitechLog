@@ -68,7 +68,7 @@ func Wizard(version string) error {
 // askFile pide el fichero hasta que uno se deja leer, en lugar de abortar al
 // primer intento fallido: teclear rutas en Windows es propenso a erratas.
 func askFile(in *bufio.Reader) (string, *elitech.Log, error) {
-	recent := findRecords(searchBases()...)
+	recent := findRecords(".")
 	if len(recent) > maxListed {
 		recent = recent[:maxListed]
 	}
