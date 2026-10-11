@@ -34,11 +34,10 @@ func sample(t *testing.T) (stats.Block, elitech.Device, Options) {
 	}
 
 	opt := Options{
-		Decimals:  2,
-		From:      june,
-		To:        june,
-		Interval:  15,
-		Generated: time.Date(2026, 8, 9, 16, 29, 44, 0, time.UTC),
+		Decimals: 2,
+		From:     june,
+		To:       june,
+		Interval: 15,
 	}
 	return blocks[0], dev, opt
 }

@@ -135,13 +135,13 @@ Cada bloque produce un fichero `informe_<S/N>_<desde>_<hasta>.txt`:
   29-06-2026              sin datos
 ------------------------------------------------------------------------------
   Resumen mensual: Media 3,58 °C · Mínimo 0,10 °C · Máximo 8,10 °C
-  RC-5 (S/N 001) · ddf0774c-001.xls · 16-06-2026 a 30-06-2026 · 09-08-2026 22:36
+  RC-5 (S/N 001) · ddf0774c-001.xls · 16-06-2026 a 30-06-2026
 ==============================================================================
 ```
 
 Cada lectura del registrador aparece en su propia línea, con el máximo, el mínimo y la media de su
 día a la derecha. Al final se resume el periodo y se indican el dispositivo, el fichero de origen y
-la fecha de generación. Los TXT se escriben con saltos de línea CRLF y, por defecto, con
+el periodo del informe. Los TXT se escriben con saltos de línea CRLF y, por defecto, con
 BOM UTF-8, para que el Bloc de notas y Excel muestren bien los acentos y el símbolo de grado.
 
 ## Sobre el fichero de entrada

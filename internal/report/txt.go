@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"time"
 	"unicode/utf8"
 
 	"github.com/dierodfer/temperatureElitechLog/internal/elitech"
@@ -13,19 +12,17 @@ import (
 )
 
 const (
-	width        = 78
-	dateFmt      = "02-01-2006"
-	stampFmt     = "02-01-2006 15:04:05"
-	generatedFmt = "02-01-2006 15:04"
+	width    = 78
+	dateFmt  = "02-01-2006"
+	stampFmt = "02-01-2006 15:04:05"
 )
 
 // Options controla el formato de la salida.
 type Options struct {
-	Decimals  int         // decimales de las temperaturas
-	From      stats.Month // mes inicial solicitado, solo informativo
-	To        stats.Month // mes final solicitado, solo informativo
-	Interval  int
-	Generated time.Time
+	Decimals int         // decimales de las temperaturas
+	From     stats.Month // mes inicial solicitado, solo informativo
+	To       stats.Month // mes final solicitado, solo informativo
+	Interval int
 }
 
 // Render compone el texto del informe de un bloque: la tabla de lecturas y, al
@@ -65,8 +62,7 @@ func footer(b stats.Block, dev elitech.Device, source string, opt Options) strin
 		}
 	}
 	parts = append(parts,
-		fmt.Sprintf("%s a %s", b.From.Format(dateFmt), b.To.Format(dateFmt)),
-		opt.Generated.Format(generatedFmt))
+		fmt.Sprintf("%s a %s", b.From.Format(dateFmt), b.To.Format(dateFmt)))
 	return strings.Join(parts, " · ")
 }
 
